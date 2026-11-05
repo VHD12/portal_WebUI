@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portale — Portal Interaction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Scroll track: its height is the length of the whole move — orbit, rest, enter -->
+  <section class="track">
+    <div class="stage">
+
+      <!-- 3D viewport: the camera lens. Background layer -->
+      <div class="viewport">
+        <!-- The world turns around the portal: that is the camera orbiting -->
+        <div class="world">
+          <!-- Far layer: the environment -->
+          <div class="bg">
+            <img class="bg-img" src="assets/scene-hd.jpg" alt="">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sunlight bounced off the mirror onto the land. Its own 3D layer with the same camera,
+           so the blend mode sits on the layer and never flattens the main world -->
+      <div class="viewport light-layer" aria-hidden="true">
+        <div class="world">
+          <!-- lies on the ground in front of the mirror, turns with the orbit -->
+          <div class="cast"><span class="cast-patch"></span></div>
+        </div>
+      </div>
+
+      <div class="shade"></div>
+
+      <div class="copy">
+        <p class="eyebrow"><span class="eyebrow-dot"></span>World Banking system awards winner</p>
+        <h1 class="headline">Enter new places<br>without starting over</h1>
+        <div class="actions">
+          <a class="btn btn-primary" href="#">See Benefits</a>
+          <a class="btn btn-ghost" href="#">Watch Demo</a>
+        </div>
+      </div>
+
+      <p class="blurb">Portale is a relocation card designed for people starting life abroad. Open remotely, spend instantly, exchange currencies fairly, and arrive already connected.</p>
+
+      <!-- The portal, on its own 3D layer with the same camera, above the copy —
+           so the text lifts away behind the door -->
+      <div class="viewport portal-layer">
+        <div class="world">
+          <!-- The mirror — fixed in the world, never turns on its own -->
+          <div class="portal">
+            <!-- light spilling out around the door -->
+            <span class="portal-bloom"></span>
+            <div class="portal-pane">
+              <img class="portal-img" src="assets/scene-hd.jpg" alt="">
+              <span class="portal-glint"></span>
+              <!-- white glow creeping in from the edges; floods the pane on entry -->
+              <span class="portal-glow"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- final white: guarantees a clean white frame as we pass through the door -->
+      <div class="whiteout" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- Through the door: the next section (placeholder for the next scroll interaction) -->
+  <section class="next">
+    <p class="next-label">Next section</p>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>

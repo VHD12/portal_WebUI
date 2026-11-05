@@ -1,0 +1,324 @@
+:root {
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.85);
+  --gutter: 6.94vw;            /* 100px at 1440 */
+
+  /* portal geometry (Figma: 183 × 312 at 1440, centred at 48.7% / 36.3%) */
+  --pw: clamp(120px, 13.2vw, 280px);
+  --ph: calc(var(--pw) * 1.72);
+  --px: 48.7%;
+  --py: 36.3%;
+  --radius: calc(var(--pw) * 0.087);  /* 16px at 183 */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  color: var(--ink);
+  /* no elastic bounce past the top or bottom of the page */
+  overscroll-behavior: none;
+}
+
+/* if a browser still bounces, the edges it reveals match: scene-dark above, white below */
+html { background: linear-gradient(to bottom, #0b0604 50%, #fff 50%); }
+body { background: #0b0604; }
+
+body {
+  font-family: "Geist", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; user-select: none; -webkit-user-drag: none; }
+
+/* ---------- scroll track ---------- */
+
+.track { position: relative; height: 520vh; }
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* ---------- 3D viewport ---------- */
+
+.viewport {
+  position: absolute;
+  inset: 0;
+  perspective: 900px;           /* overridden by CONFIG.perspective */
+  perspective-origin: var(--px) var(--py);
+  isolation: isolate;
+}
+
+/* the world — pivots on the portal centre; rotating it = orbiting the camera */
+.world {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: var(--px) var(--py);
+  will-change: transform;
+}
+
+/* far plane — an anchor at the pivot, pushed back in Z by script.js */
+.bg {
+  position: absolute;
+  left: var(--px);
+  top: var(--py);
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.bg-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* size + offset set in script.js */
+  max-width: none;
+  backface-visibility: hidden;
+}
+
+/* ---------- sunlight ---------- */
+
+/* light layer — everything in it adds light to the scene below */
+.light-layer {
+  pointer-events: none;
+  mix-blend-mode: plus-lighter;
+}
+
+@supports not (mix-blend-mode: plus-lighter) {
+  .light-layer { mix-blend-mode: screen; }
+}
+
+/* --sun: one sunlight colour shared by the glass glint and the patch on the land */
+:root { --sun: 255, 222, 182; }
+
+/* The mirror's footprint of sunlight on the land: portal-shaped, starting at its base and
+   reaching toward the camera. rotateX about the top edge lays it on the ground; 90deg is
+   truly flat, but the eye sits low, so it is tipped up a little to stay readable. */
+.cast {
+  position: absolute;
+  left: var(--px);
+  top: calc(var(--py) + var(--ph) * 0.5);
+  width: var(--pw);
+  height: calc(var(--ph) * 1.15);
+  margin-left: calc(var(--pw) * -0.5);
+  transform-origin: 50% 0;
+  transform: rotateX(74deg);
+  will-change: opacity;
+}
+
+.cast-patch {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(to bottom,
+    rgba(var(--sun), 0.62) 0%,
+    rgba(var(--sun), 0.32) 45%,
+    rgba(var(--sun), 0) 100%);
+  filter: blur(calc(var(--pw) * 0.07));
+}
+
+/* ---------- portal ---------- */
+
+.portal {
+  position: absolute;
+  left: var(--px);
+  top: var(--py);
+  width: var(--pw);
+  height: var(--ph);
+  margin-left: calc(var(--pw) * -0.5);
+  margin-top: calc(var(--ph) * -0.5);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.portal-pane {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+
+.portal-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  /* size / translate set in script.js */
+  will-change: transform;
+}
+
+/* gradient rim: white 70% top-left → 5% bottom-right */
+.portal-pane::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(var(--sun), 0.85), rgba(var(--sun), 0.08));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* inner shadows: top light line + soft inner glow */
+.portal-pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.12),
+    inset 0 0 24px rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* sun on the glass: a fixed warm glint from the upper left; script.js only changes its strength */
+.portal-glint {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(118deg, rgba(var(--sun), 0.42) 0%, rgba(var(--sun), 0.12) 28%, rgba(var(--sun), 0) 55%),
+    linear-gradient(to top, rgba(var(--sun), 0.22) 0%, rgba(var(--sun), 0) 25%);
+  mix-blend-mode: screen;
+  z-index: 1;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+/* the portal layer sits above the copy; let clicks fall through to the CTAs */
+.portal-layer { pointer-events: none; }
+
+/* light spilling out around the door: an outer white glow, driven by script.js */
+.portal-bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  pointer-events: none;
+  will-change: box-shadow;
+}
+
+/* glowing door edges: a white inner shadow, driven by script.js (box-shadow + opacity) */
+.portal-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 4;
+  pointer-events: none;
+  will-change: box-shadow, background-color;
+}
+
+/* ---------- overlay ---------- */
+
+.shade {
+  position: absolute;
+  inset: 30% 0 0 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
+  pointer-events: none;
+}
+
+/* pure white once we are through the door */
+.whiteout {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.copy {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 12vh;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+}
+
+.eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--ink);
+}
+
+.headline {
+  font-weight: 400;
+  font-size: clamp(40px, 5.6vw, 104px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-primary { background: #fff; color: #000; }
+.btn-primary:hover { background: rgba(255, 255, 255, 0.85); }
+
+.btn-ghost { color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6); }
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
+
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.blurb {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 12vh;
+  width: 340px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 900px) {
+  :root { --px: 50%; --py: 32%; }
+  .copy { bottom: auto; top: 58%; right: 16px; left: 16px; }
+  .blurb { display: none; }
+}
+
+/* ---------- next section ---------- */
+
+.next {
+  min-height: 100vh;
+  background: #fff;
+  color: #111;
+  display: grid;
+  place-items: center;
+}
+
+.next-label {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.4);
+}
